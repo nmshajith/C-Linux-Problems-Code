@@ -1,0 +1,55 @@
+/******************************************************************************
+
+                              Online C++ Compiler.
+               Code, Compile, Run and Debug C++ program online.
+Write your code in this editor and press "Run" button to compile and execute it.
+
+*******************************************************************************/
+
+#include <iostream>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+
+std::mutex mu;
+std::condition_variable cond; 
+// Since the condition is event driven. Eg: If odd, then print_odd, else print_even, use condition_variable
+// If the number of resource is to be maintained, then use semaphore
+int count = 1;
+
+void PrintOdd()
+{
+    for(; count < 100;)
+    {
+        std::unique_lock<std::mutex> locker(mu); // Locks the mutex
+        cond.wait(locker,[](){ return (count%2 == 1); }); // Blocking thread wait till count is odd
+        std::cout << "From Odd:  " << count << std::endl; // Print count
+        count++;    // Increments
+        locker.unlock(); //Unlock mutex
+        cond.notify_all(); // Notify other threads waiting on same condition variable
+    }
+
+}
+
+void PrintEven()
+{
+    for(; count < 100;)
+    {
+        std::unique_lock<std::mutex> locker(mu);
+        cond.wait(locker,[](){ return (count%2 == 0); });
+        std::cout << "From Even: " << count << std::endl;
+        count++;
+        locker.unlock();
+        cond.notify_all();
+    }
+}
+int main()
+{
+    std::cout<<"Hello World\n";
+    std::thread t1(PrintOdd);
+    std::thread t2(PrintEven);
+    t1.join();
+    t2.join();
+    return 0;
+    return 0;
+}
